@@ -1,22 +1,16 @@
-/**
- * Resource management, RGR, Variant 06.
- * Main program.
- * @author      Zhigalov Peter
- * @version     1.2
- */
 #include <windows.h>
 #include <string>
-#include <sstream>
+#include <stdio.h>
+
 using namespace std;
-#define DLLNAME "lib.dll"
+
+#define LIB "lib.dll"
+
 HWND hwnd, label_height, label_sse;
 
-/**
- * @brief Function for loading .dll and call functions
- */
 void thread()
 {
-    HINSTANCE hinstLib = LoadLibrary(TEXT(DLLNAME));
+    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
     if(hinstLib != NULL)
     {
         typedef int (*get_max_window_height_)();
@@ -24,7 +18,6 @@ void thread()
             (get_max_window_height_)GetProcAddress(hinstLib, "get_max_window_height");
         if(get_max_window_height != NULL)
         {
-            stringstream lbl;
             lbl << "Basic task:" << endl <<
                 "Maximum height of the window = " << get_max_window_height();
             //while(!IsWindow(hwnd)) {}
@@ -33,7 +26,7 @@ void thread()
         else
         {
             stringstream msg;
-            msg << "int get_max_window_height() not found in " << DLLNAME;
+            msg << "int get_max_window_height() not found in " << LIB;
             MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
         }
         
@@ -55,7 +48,7 @@ void thread()
         else
         {
             stringstream msg;
-            msg << "int has_sse() not found in " << DLLNAME;
+            msg << "int has_sse() not found in " << LIB;
             MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
         }
         FreeLibrary(hinstLib);
@@ -63,7 +56,7 @@ void thread()
     else
     {
         stringstream msg;
-        msg << DLLNAME << " not found";
+        msg << LIB << " not found";
         MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
     }
 }

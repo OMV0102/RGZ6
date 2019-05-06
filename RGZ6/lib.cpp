@@ -1,54 +1,32 @@
-/**
- * Resource management, RGR, Variant 06.
- * Dynamic-Link Library.
- * @author      Zhigalov Peter
- * @version     1.2
- */
 #include <windows.h>
 
-/**
- * @brief Function for determine maximum height of the window
- * @return maximum height of the window
- */
-extern "C" __declspec(dllexport) int get_max_window_height()
+//функция определяет высоту клиентской области полноэкранного окна
+extern "C" __declspec(dllexport) int win_height()
 {
     return GetSystemMetrics(SM_CYFULLSCREEN);
 }
 
-/**
- * @brief Function for check SSE support
- * @return 0 - not support, 1 - support, -1 - can`t CPUID
- */
-extern "C"
-__declspec(dllexport)
-int has_sse()
+//функция определяет поддержка SSE
+extern "C" __declspec(dllexport) int support_sse()
 {
-    int sse_flag;
+    int sse;
     __asm
     {
-        ; Check support CPUID instruction
-        pushfd              ; push EFLAGS to stack
-        pop eax             ; pop to EAX
-        mov ebx, eax        ; save to EBX
-        xor eax, 200000h    ; change bit 21
-        push eax            ; push changes to stack
-        popfd               ; pop new EFLAGS
-        pushfd              ; push EFLAGS to stack
-        pop eax             ; pop to EAX
-        xor eax, ebx        ; check bit 21
-        je no_cpuid         ; if 0 CPUID not supported
-        ; Check support SSE
-        mov eax, 1          ; EAX=1: Processor Info and Feature Bits
-        cpuid               ; call CPUID
-        and edx, 2000000h   ; mask
-        shr edx, 25         ; shift to 25 bit
-        mov sse_flag, edx   ; save result
-        jmp end
-        ; No CPUID support
-        no_cpuid:
-        mov sse_flag, -1    ; return -1
-        ; End
-        end:
+		//если поместить в регистр EAX единицу
+		//то после запуска команды cpuid
+		//в регистре EDX 25-ый бит будет обозначать
+		//есть ли поддержка SSE или нет
+		//если 25-ый бит равен 1, значит есть
+		//если 25-ый бит равен 0, значит нет
+        MOV EAX, 1h
+        cpuid
+        AND EDX, 02000000h
+		//сдвигаем на 25 битов вправо
+		//25 бит теперь стал нулевым битом
+        SHR EDX, 25
+		//запоминаем значение, котрое равно
+		//либо единице, либо нулю
+		MOV sse, EDX
     }
-    return sse_flag;
+    return sse;
 }

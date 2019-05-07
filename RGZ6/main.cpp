@@ -9,12 +9,20 @@ LPCSTR szTitle = "MAX высота окна";//заголовок окна
 HWND hwnd;//дескриптор окна
 HWND label_height, label_sse;
 
-char info[256];
+char info[256];//строка, в которую будем запоминать полученные данные
 
 DWORD WINAPI ThreadFunc(void*)
 {
-
-    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));//загружаем динамическую библиотеку
+	char stroka1[128];//вспомогательная строка1
+	char stroka2[128];//вспомогательная строка2
+	//обнуляем все вспомогательные строки и основную
+	strcpy(info, "");
+	strcpy(stroka1, "");
+	strcpy(stroka2, "");
+	
+	//загружаем динамическую библиотеку
+    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
+	//если динамическая библиотека усрешно загруженна
     if(hinstLib != NULL)
     {
         typedef int (*ImportFunction)();
@@ -24,15 +32,15 @@ DWORD WINAPI ThreadFunc(void*)
 		//если функция win_height вернула какое-то значение
         if(win_height != NULL)
         {
-            lbl << "Basic task:" << endl <<
-                "Maximum height of the window = " << get_max_window_height();
-            SetWindowText(label_height, (lbl.str()).c_str());
+			sprintf(stroka1, "Максимальная высота полноэкранного окна: %d", win_height);
+            SetWindowText(label_height, stroka1);
         }
 		//если функция win_height вернула значение NULL
         else
         {
-            msg << "int get_max_window_height() not found in " << LIB;
-            MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
+			sprintf(stroka1, "Максимальная высота полноэкранного окна: неизвестна");
+			SetWindowText(label_height, stroka1);
+
         }
         
 		//в переменную support_sse запоминаем результат работы функции support_sse
@@ -59,6 +67,7 @@ DWORD WINAPI ThreadFunc(void*)
         }
         FreeLibrary(hinstLib);
     }
+	//если библиотека отсутсвует
     else
     {
         stringstream msg;

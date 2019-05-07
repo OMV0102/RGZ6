@@ -1,38 +1,44 @@
 #include <windows.h>
-#include <string>
 #include <stdio.h>
-
 using namespace std;
+#define LIB "library.dll" //имя подключаемой скомпилированной библиблиотеки
 
-#define LIB "lib.dll"
+LPCSTR szClassName = "Control Source";//имя класса
+LPCSTR szTitle = "MAX высота окна";//заголовок окна
 
-HWND hwnd, label_height, label_sse;
+HWND hwnd;//дескриптор окна
+HWND label_height, label_sse;
 
-void thread()
+char info[256];
+
+DWORD WINAPI ThreadFunc(void*)
 {
-    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
+
+    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));//загружаем динамическую библиотеку
     if(hinstLib != NULL)
     {
-        typedef int (*get_max_window_height_)();
-        get_max_window_height_ get_max_window_height = 
-            (get_max_window_height_)GetProcAddress(hinstLib, "get_max_window_height");
-        if(get_max_window_height != NULL)
+        typedef int (*ImportFunction)();
+		//в переменную win_height запоминаем результат работы функции win_height
+		ImportFunction win_height = (ImportFunction)GetProcAddress(hinstLib, "win_height");
+		
+		//если функция win_height вернула какое-то значение
+        if(win_height != NULL)
         {
             lbl << "Basic task:" << endl <<
                 "Maximum height of the window = " << get_max_window_height();
-            //while(!IsWindow(hwnd)) {}
             SetWindowText(label_height, (lbl.str()).c_str());
         }
+		//если функция win_height вернула значение NULL
         else
         {
-            stringstream msg;
             msg << "int get_max_window_height() not found in " << LIB;
             MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
         }
         
-        typedef int (*has_sse_)();
-        has_sse_ has_sse = (has_sse_)GetProcAddress(hinstLib, "has_sse");
-        if(has_sse != NULL)
+		//в переменную support_sse запоминаем результат работы функции support_sse
+		ImportFunction support_sse  = (ImportFunction)GetProcAddress(hinstLib, "support_sse");
+
+        if(support_sse != NULL)
         {
             int sse = has_sse();
             stringstream lbl;
@@ -59,6 +65,7 @@ void thread()
         msg << LIB << " not found";
         MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
     }
+	return 0;
 }
 
 /**
@@ -69,9 +76,9 @@ void thread()
  * @param lParam additional message information
  * @return result of message processing and depends on message
  */
-LONG WINAPI WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch (Msg)
+    switch (msg)
     {
     case WM_CTLCOLORSTATIC: /** Change color */
     {
@@ -115,7 +122,7 @@ LONG WINAPI WndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
  * @param nCmdShow controls how window is to be shown
  * @return 0
  */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWinMode)
 {
     /** Some fonts */
     HFONT font_std = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
@@ -124,11 +131,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WNDCLASS wnd;
     memset(&wnd, 0, sizeof(WNDCLASS));
     wnd.style = CS_HREDRAW | CS_VREDRAW;
-    wnd.lpfnWndProc = WndProc;
-    wnd.hInstance = hInstance;
+    wnd.lpfnWndProc = WindowFunc;
+    wnd.hInstance = hThisInst;
     wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
-    wnd.lpszClassName = "main_class";
-    wnd.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(100));
+    wnd.lpszClassName = szClassName;
+    wnd.hIcon = LoadIcon(hThisInst, MAKEINTRESOURCE(100));
     RegisterClass(&wnd);
     /** Some main window */
     int window_width = 300;
@@ -137,7 +144,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int button_height = 25;
     int border = 5;
     HDC hDCScreen = GetDC(NULL);
-    hwnd = CreateWindow("main_class", "Max window height", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+    hwnd = CreateWindow(szClassName, szTitle, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         (GetDeviceCaps(hDCScreen, HORZRES) - window_width) / 2, (GetDeviceCaps(hDCScreen, VERTRES) - window_height) / 2,
         window_width, window_height, NULL, NULL, hInstance, NULL);
     RECT rt;

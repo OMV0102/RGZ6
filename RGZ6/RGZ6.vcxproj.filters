@@ -18,10 +18,8 @@
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="lib.cpp">
+    <ClCompile Include="library.cpp">
       <Filter>Исходные файлы</Filter>
-    </Library>
+    </ClCompile>
   </ItemGroup>
 </Project>

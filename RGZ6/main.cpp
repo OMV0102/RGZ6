@@ -102,7 +102,7 @@ LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	DWORD IDThread;
 	switch (msg)
 	{	
-		case WM_CTLCOLORSTATIC: /** Change color */
+		case WM_CTLCOLORSTATIC:
 		{
 			DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
 			if (CtrlID == 1001)
@@ -168,9 +168,8 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	GetClientRect(hwnd, &rt);
 	window_width = rt.right;
 	window_height = rt.bottom;
-	/** Some static labels for basic and advanced tasks */
-	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\"!"), WS_CHILD | WS_VISIBLE | WS_BORDER,
-		border, border, window_width - 2 * border, (window_height - button_height - 4 * border) / 2,
+	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\"!"), WS_CHILD | WS_VISIBLE,
+		border, border, window_width - 2 * border, window_height - 2*button_height,
 		hwnd, (HMENU)1001, hThisInst, NULL);
 	SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
 
@@ -182,7 +181,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	CreateWindow("button", "Обновить", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 		window_width - 2 * (border + button_width), window_height - border - button_height, button_width, button_height,
 		hwnd, (HMENU)1003, hThisInst, NULL);
-	/** Starting ... */
+
 	ShowWindow(hwnd, nWinMode);
 	UpdateWindow(hwnd);
 	MSG msg;

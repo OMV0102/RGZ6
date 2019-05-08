@@ -169,7 +169,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	window_width = rt.right;
 	window_height = rt.bottom;
 	/** Some static labels for basic and advanced tasks */
-	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\"!"), WS_CHILD | WS_VISIBLE | WS_BORDER,
 		border, border, window_width - 2 * border, (window_height - button_height - 4 * border) / 2,
 		hwnd, (HMENU)1001, hThisInst, NULL);
 	SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
@@ -178,7 +178,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	DWORD IDThread;
 	hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
 	CloseHandle(hThread);
-	/** Some buttons: Run and Exit */
+
 	CreateWindow("button", "Обновить", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
 		window_width - 2 * (border + button_width), window_height - border - button_height, button_width, button_height,
 		hwnd, (HMENU)1003, hThisInst, NULL);

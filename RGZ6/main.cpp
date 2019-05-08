@@ -45,7 +45,7 @@ DWORD WINAPI ThreadFunc(void*)
 		//если функция support_sse вернула значение NULL
 		else if (win_height != NULL && support_sse == NULL)
 		{
-			sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE): unknown", win_height());
+			sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE): UNKNOWN", win_height());
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
@@ -56,10 +56,10 @@ DWORD WINAPI ThreadFunc(void*)
 		{
 			//если функция support_sse вернула значение 1, значит SSE поддерживается
 			if (support_sse() == 1)
-				sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE) supported");
+				sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE) supported");
 			//иначе не поддерживается
 			else
-				sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE) NOT supported");
+				sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE) NOT supported");
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
@@ -68,19 +68,21 @@ DWORD WINAPI ThreadFunc(void*)
 		//если обе функции вернули значение NULL
 		else
 		{
-			sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE): unknown");
+			sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE): UNKNOWN");
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
 			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nНе удалось определить поддержку SSE!");
 		}
 
-		//если [хоть какая-то из двух функций (или обе) вернула некорректное значение, выводим MessageBox с ошибкой
+		//освобождаем дескриптор и закрываем динамическую библиотеку
+		FreeLibrary(hinstLib);
+
+		//если хоть какая-то из двух функций (или обе) вернула(и) некорректное значение, выводим MessageBox с ошибкой
 		if (win_height == NULL || support_sse == NULL)
 			MessageBox(hwnd, LPCSTR(msg_error), LPCSTR("Ошибка"), MB_OK | MB_ICONERROR);
 
-		//освобождаем дескриптор и закрываем динамическую библиотеку
-		FreeLibrary(hinstLib);
+		
 	}
 	//если библиотека отсутствует
 	else
@@ -113,18 +115,14 @@ LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 
-		case WM_COMMAND: /** Button clicked */
+		case WM_COMMAND:
 		{
-			if (LOWORD(wParam) == 1003)
-			{
-				/** Launch in new thread */
-				hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
-				CloseHandle(hThread);
-			}
+			hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
+			CloseHandle(hThread);
 			break;
 		}
 
-		case WM_DESTROY: /** Window closed */ 
+		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
 			break;

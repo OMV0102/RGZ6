@@ -1,196 +1,195 @@
 #include <windows.h>
 #include <stdio.h>
 using namespace std;
-#define LIB "library.dll" //имя подключаемой скомпилированной библиблиотеки
+#define LIB "library.dll"//имя подключаемой скомпилированной библиблиотеки
 
-LPCSTR szClassName = "Control Source";//имя класса
-LPCSTR szTitle = "MAX высота окна";//заголовок окна
+LPCSTR szClassName = "Window";//имя класса
+LPCSTR szTitle = "Максимальная высота окна";//заголовок окна
 
 HWND hwnd;//дескриптор окна
-HWND label_height, label_sse;
+HWND label;
 
 char info[256];//строка, в которую будем запоминать полученные данные
+char msg_error[128];//строка для вывода возможной ошибки в MessageBox
 
 DWORD WINAPI ThreadFunc(void*)
 {
-	char stroka1[128];//вспомогательная строка1
-	char stroka2[128];//вспомогательная строка2
-	//обнуляем все вспомогательные строки и основную
-	strcpy(info, "");
-	strcpy(stroka1, "");
-	strcpy(stroka2, "");
-	
+	//обнуляем текст в label
+	SetWindowText(label, LPCSTR(""));
+	//обнуляем все строки
+	strcpy_s(info, LPCSTR(""));
+	strcpy_s(msg_error, LPCSTR(""));
+
 	//загружаем динамическую библиотеку
-    HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
-	//если динамическая библиотека усрешно загруженна
-    if(hinstLib != NULL)
-    {
-        typedef int (*ImportFunction)();
+	HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
+	//если динамическая библиотека успешно загруженна
+	if (hinstLib != NULL)
+	{
+		typedef int(*ImportFunction)();
 		//в переменную win_height запоминаем результат работы функции win_height
 		ImportFunction win_height = (ImportFunction)GetProcAddress(hinstLib, "win_height");
-		
-		//если функция win_height вернула какое-то значение
-        if(win_height != NULL)
-        {
-			sprintf(stroka1, "Максимальная высота полноэкранного окна: %d", win_height);
-            SetWindowText(label_height, stroka1);
-        }
-		//если функция win_height вернула значение NULL
-        else
-        {
-			sprintf(stroka1, "Максимальная высота полноэкранного окна: неизвестна");
-			SetWindowText(label_height, stroka1);
-
-        }
-        
 		//в переменную support_sse запоминаем результат работы функции support_sse
-		ImportFunction support_sse  = (ImportFunction)GetProcAddress(hinstLib, "support_sse");
+		ImportFunction support_sse = (ImportFunction)GetProcAddress(hinstLib, "support_sse");
 
-        if(support_sse != NULL)
-        {
-            int sse = has_sse();
-            stringstream lbl;
-            lbl << "Advanced task:" << endl << "Streaming SIMD Extensions status: ";
-            if(sse > 0)
-                lbl << "SSE supported";
-            else if(sse == 0)
-                lbl << "SSE not supported";
-            else
-                lbl << "can`t determine - CPUID not support";
-            SetWindowText(label_sse, (lbl.str()).c_str());
-        }
-        else
-        {
-            stringstream msg;
-            msg << "int has_sse() not found in " << LIB;
-            MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
-        }
-        FreeLibrary(hinstLib);
-    }
-	//если библиотека отсутсвует
-    else
-    {
-        stringstream msg;
-        msg << LIB << " not found";
-        MessageBox(hwnd, (msg.str()).c_str(), "Error", MB_OK | MB_ICONERROR);
-    }
+		//если функции win_height и support_sse вернули какое-то значение
+		if (win_height != NULL && support_sse != NULL)
+		{
+			//если функция support_sse вернула значение 1, значит SSE поддерживается
+			if (support_sse() == 1)
+				sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): поддерживается", win_height());
+			//иначе не поддерживается
+			else
+				sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): НЕ поддерживается", win_height());
+			SetWindowText(label, LPCSTR(info));
+		}
+		//если функция support_sse вернула значение NULL
+		else if (win_height != NULL && support_sse == NULL)
+		{
+			sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): неизвестно", win_height());
+			SetWindowText(label, LPCSTR(info));
+
+			//формируем сообщение об ошибке для MessageBox
+			sprintf_s(msg_error, "Не удалось определить поддержку SSE!\nВозможно вы используете не оригинальный файл %s.", LIB);
+		}
+		//если функция win_height вернула значение NULL
+		else if (win_height == NULL && support_sse != NULL) 
+		{
+			//если функция support_sse вернула значение 1, значит SSE поддерживается
+			if (support_sse() == 1)
+				sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): поддерживается");
+			//иначе не поддерживается
+			else
+				sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): НЕ поддерживается");
+			SetWindowText(label, LPCSTR(info));
+
+			//формируем сообщение об ошибке для MessageBox
+			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nВозможно вы используете не оригинальный файл %s.", LIB);
+		}
+		//если обе функции вернули значение NULL
+		else
+		{
+			sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): неизвестно");
+			SetWindowText(label, LPCSTR(info));
+
+			//формируем сообщение об ошибке для MessageBox
+			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nНе удалось определить поддержку SSE!\nВозможно вы используете не оригинальный файл %s.", LIB);
+		}
+
+		//если [хоть какая-то из двух функций (или обе) вернула некорректное значение, выводим MessageBox с ошибкой
+		if (win_height == NULL || support_sse == NULL)
+			MessageBox(hwnd, LPCSTR(msg_error), LPCSTR("Ошибка"), MB_OK | MB_ICONERROR);
+
+		//освобождаем дескриптор и закрываем динамическую библиотеку
+		FreeLibrary(hinstLib);
+	}
+	//если библиотека отсутствует
+	else
+	{
+		//формируем сообщение об ошибке для label
+		sprintf_s(info, "Библиотека %s отсутствует!\nПоместите библиотеку в папку с программой\nи нажмите кнопку \"Обновить\".", LIB);
+		SetWindowText(label, LPCSTR(info));
+
+		//формируем сообщение об ошибке для MessageBox
+		sprintf_s(msg_error, "Библиотека %s отсутствует!\nПоместите библиотеку в папку с программой\nи нажмите кнопку \"Обновить\".", LIB);
+		MessageBox(hwnd, LPCSTR(msg_error), LPCSTR("Ошибка"), MB_OK | MB_ICONERROR);
+	}
 	return 0;
 }
 
-/**
- * @brief Function for handling messages
- * @param hWnd handle to window procedure which received message.
- * @param Msg message
- * @param wParam additional message information
- * @param lParam additional message information
- * @return result of message processing and depends on message
- */
 LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch (msg)
-    {
-    case WM_CTLCOLORSTATIC: /** Change color */
-    {
-        DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
-        if (CtrlID == 1001 || CtrlID == 1002)
-        {
-            SetTextColor((HDC)wParam, RGB(200, 200, 200));
-            SetBkColor((HDC)wParam, RGB(0, 0, 0));
-            return (INT_PTR)GetStockObject(BLACK_BRUSH);
-        }
-    }
-    break;
-    case WM_COMMAND: /** Button clicked */
-    {
-        if (LOWORD(wParam) == 1003)
-        {
-            HANDLE hThread;
-            DWORD IDThread;
-            /** Launch in new thread */
-            hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread, NULL, 0, &IDThread);
-            CloseHandle(hThread);
-        }
-        if (LOWORD(wParam) == 1004)
-            PostQuitMessage(0);
-    }
-    break;
-    case WM_DESTROY: /** Window closed */
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hWnd, Msg, wParam, lParam);
-    }
-    return 0;
+	HANDLE hThread;
+	DWORD IDThread;
+	switch (msg)
+	{	
+		case WM_CTLCOLORSTATIC: /** Change color */
+		{
+			DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
+			if (CtrlID == 1001)
+			{
+				SetTextColor((HDC)wParam, RGB(200, 200, 200));
+				SetBkColor((HDC)wParam, RGB(0, 0, 0));
+				return (INT_PTR)GetStockObject(BLACK_BRUSH);
+			}
+		}
+
+		case WM_COMMAND: /** Button clicked */
+		{
+			if (LOWORD(wParam) == 1003)
+			{
+				/** Launch in new thread */
+				hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
+				CloseHandle(hThread);
+			}
+			break;
+		}
+
+		case WM_DESTROY: /** Window closed */ 
+		{
+			PostQuitMessage(0);
+			break;
+		}
+		
+		default:
+			return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+	return 0;
 }
 
-/**
- * @brief Main function
- * @param hInstance handle to current instance of application
- * @param hPrevInstance handle to previous instance of application (always NULL)
- * @param lpCmdLine command line for application, excluding the program name
- * @param nCmdShow controls how window is to be shown
- * @return 0
- */
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWinMode)
 {
-    /** Some fonts */
-    HFONT font_std = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-    HFONT font_mono = (HFONT)GetStockObject(OEM_FIXED_FONT);
-    /** Some definition for main_class */
-    WNDCLASS wnd;
-    memset(&wnd, 0, sizeof(WNDCLASS));
-    wnd.style = CS_HREDRAW | CS_VREDRAW;
-    wnd.lpfnWndProc = WindowFunc;
-    wnd.hInstance = hThisInst;
-    wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
-    wnd.lpszClassName = szClassName;
-    wnd.hIcon = LoadIcon(hThisInst, MAKEINTRESOURCE(100));
-    RegisterClass(&wnd);
-    /** Some main window */
-    int window_width = 300;
-    int window_height = 200;
-    int button_width = 75;
-    int button_height = 25;
-    int border = 5;
-    HDC hDCScreen = GetDC(NULL);
-    hwnd = CreateWindow(szClassName, szTitle, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        (GetDeviceCaps(hDCScreen, HORZRES) - window_width) / 2, (GetDeviceCaps(hDCScreen, VERTRES) - window_height) / 2,
-        window_width, window_height, NULL, NULL, hInstance, NULL);
-    RECT rt;
-    GetClientRect(hwnd, &rt);
-    window_width = rt.right;
-    window_height = rt.bottom;
-    /** Some static labels for basic and advanced tasks */
-    label_height = CreateWindow("static", "Click \"Run\"", WS_CHILD | WS_VISIBLE | WS_BORDER,
-        border, border, window_width - 2 * border, (window_height - button_height - 4 * border) / 2,
-        hwnd, (HMENU)1001, hInstance, NULL);
-    SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
-    label_sse = CreateWindow("static", "Click \"Run\"", WS_CHILD | WS_VISIBLE | WS_BORDER,
-        border, (window_height - button_height) / 2, window_width - 2 * border, (window_height - button_height - 4 * border) / 2,
-        hwnd, (HMENU)1002, hInstance, NULL);
-    SendDlgItemMessage(hwnd, 1002, WM_SETFONT, (WPARAM)font_mono, TRUE);
-    /** Running thread before show window */
-    HANDLE hThread;
-    DWORD IDThread;
-    hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread, NULL, 0, &IDThread);
-    CloseHandle(hThread);
-    /** Some buttons: Run and Exit */
-    CreateWindow("button", "Run", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        window_width - 2 * (border + button_width), window_height - border - button_height, button_width, button_height,
-        hwnd, (HMENU)1003, hInstance, NULL);
-    SendDlgItemMessage(hwnd, 1003, WM_SETFONT, (WPARAM)font_std, TRUE);
-    CreateWindow("button", "Exit", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        window_width - border - button_width, window_height - border - button_height, button_width, button_height,
-        hwnd, (HMENU)1004, hInstance, NULL);
-    SendDlgItemMessage(hwnd, 1004, WM_SETFONT, (WPARAM)font_std, TRUE);
-    /** Starting ... */
-    ShowWindow(hwnd, nCmdShow);
-    UpdateWindow(hwnd);
-    MSG msg;
-    while(GetMessage(&msg, NULL, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-    return 0;
+	HFONT font_std = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	HFONT font_mono = (HFONT)GetStockObject(OEM_FIXED_FONT);
+
+	WNDCLASS wcl;
+	wcl.style = CS_HREDRAW | CS_VREDRAW;
+	wcl.lpfnWndProc = WindowFunc;
+	wcl.cbClsExtra = 0;
+	wcl.cbWndExtra = 0;
+	wcl.hInstance = hThisInst;
+	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wcl.lpszMenuName = NULL;
+	wcl.lpszClassName = szClassName;
+	RegisterClass(&wcl);
+
+	/** Some main window */
+	int window_width = 300;
+	int window_height = 200;
+	int button_width = 75;
+	int button_height = 25;
+	int border = 5;
+	HDC hDCScreen = GetDC(NULL);
+	hwnd = CreateWindow(szClassName, szTitle, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+		(GetDeviceCaps(hDCScreen, HORZRES) - window_width) / 2, (GetDeviceCaps(hDCScreen, VERTRES) - window_height) / 2,
+		window_width, window_height, NULL, NULL, hThisInst, NULL);
+	RECT rt;
+	GetClientRect(hwnd, &rt);
+	window_width = rt.right;
+	window_height = rt.bottom;
+	/** Some static labels for basic and advanced tasks */
+	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\""), WS_CHILD | WS_VISIBLE | WS_BORDER,
+		border, border, window_width - 2 * border, (window_height - button_height - 4 * border) / 2,
+		hwnd, (HMENU)1001, hThisInst, NULL);
+	SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
+
+	HANDLE hThread;
+	DWORD IDThread;
+	hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
+	CloseHandle(hThread);
+	/** Some buttons: Run and Exit */
+	CreateWindow("button", "Обновить", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+		window_width - 2 * (border + button_width), window_height - border - button_height, button_width, button_height,
+		hwnd, (HMENU)1003, hThisInst, NULL);
+	/** Starting ... */
+	ShowWindow(hwnd, nWinMode);
+	UpdateWindow(hwnd);
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return 0;
 }

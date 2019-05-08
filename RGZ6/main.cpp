@@ -36,43 +36,43 @@ DWORD WINAPI ThreadFunc(void*)
 		{
 			//если функция support_sse вернула значение 1, значит SSE поддерживается
 			if (support_sse() == 1)
-				sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): поддерживается", win_height());
+				sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE) supported", win_height());
 			//иначе не поддерживается
 			else
-				sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): НЕ поддерживается", win_height());
-			SetWindowText(label, LPCSTR(info));
+				sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE) NOT supported", win_height());
+			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 		}
 		//если функция support_sse вернула значение NULL
 		else if (win_height != NULL && support_sse == NULL)
 		{
-			sprintf_s(info, "Максимальная высота полноэкранного окна: %d\n\nПотоковое SIMD-расширение процессора (SSE): неизвестно", win_height());
-			SetWindowText(label, LPCSTR(info));
+			sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE): unknown", win_height());
+			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
-			sprintf_s(msg_error, "Не удалось определить поддержку SSE!\nВозможно вы используете не оригинальный файл %s.", LIB);
+			sprintf_s(msg_error, "Не удалось определить поддержку SSE!");
 		}
 		//если функция win_height вернула значение NULL
 		else if (win_height == NULL && support_sse != NULL) 
 		{
 			//если функция support_sse вернула значение 1, значит SSE поддерживается
 			if (support_sse() == 1)
-				sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): поддерживается");
+				sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE) supported");
 			//иначе не поддерживается
 			else
-				sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): НЕ поддерживается");
-			SetWindowText(label, LPCSTR(info));
+				sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE) NOT supported");
+			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
-			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nВозможно вы используете не оригинальный файл %s.", LIB);
+			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!");
 		}
 		//если обе функции вернули значение NULL
 		else
 		{
-			sprintf_s(info, "Максимальная высота полноэкранного окна: неизвестно\n\nПотоковое SIMD-расширение процессора (SSE): неизвестно");
-			SetWindowText(label, LPCSTR(info));
+			sprintf_s(info, "\n\n Maximum height of full screen window: unknown\n\n\n Streaming SIMD Extensions (SSE): unknown");
+			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
-			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nНе удалось определить поддержку SSE!\nВозможно вы используете не оригинальный файл %s.", LIB);
+			sprintf_s(msg_error, "Не удалось определить максимальную высоту полноэкранного окна!\nНе удалось определить поддержку SSE!");
 		}
 
 		//если [хоть какая-то из двух функций (или обе) вернула некорректное значение, выводим MessageBox с ошибкой
@@ -86,7 +86,7 @@ DWORD WINAPI ThreadFunc(void*)
 	else
 	{
 		//формируем сообщение об ошибке для label
-		sprintf_s(info, "Библиотека %s отсутствует!\nПоместите библиотеку в папку с программой\nи нажмите кнопку \"Обновить\".", LIB);
+		sprintf_s(info, "\n\n\n\n                 *** ERROR ***");//записываем в текстовое поле static
 		SetWindowText(label, LPCSTR(info));
 
 		//формируем сообщение об ошибке для MessageBox
@@ -107,7 +107,7 @@ LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
 			if (CtrlID == 1001)
 			{
-				SetTextColor((HDC)wParam, RGB(200, 200, 200));
+				SetTextColor((HDC)wParam, RGB(255, 255, 255));
 				SetBkColor((HDC)wParam, RGB(0, 0, 0));
 				return (INT_PTR)GetStockObject(BLACK_BRUSH);
 			}
@@ -138,9 +138,8 @@ LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWinMode)
 {
-	HFONT font_std = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 	HFONT font_mono = (HFONT)GetStockObject(OEM_FIXED_FONT);
-
+	//====================================
 	WNDCLASS wcl;
 	wcl.style = CS_HREDRAW | CS_VREDRAW;
 	wcl.lpfnWndProc = WindowFunc;
@@ -153,24 +152,27 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	wcl.lpszMenuName = NULL;
 	wcl.lpszClassName = szClassName;
 	RegisterClass(&wcl);
+	//====================================
 
-	/** Some main window */
-	int window_width = 300;
-	int window_height = 200;
-	int button_width = 75;
-	int button_height = 25;
-	int border = 5;
-	HDC hDCScreen = GetDC(NULL);
-	hwnd = CreateWindow(szClassName, szTitle, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-		(GetDeviceCaps(hDCScreen, HORZRES) - window_width) / 2, (GetDeviceCaps(hDCScreen, VERTRES) - window_height) / 2,
-		window_width, window_height, NULL, NULL, hThisInst, NULL);
-	RECT rt;
-	GetClientRect(hwnd, &rt);
-	window_width = rt.right;
-	window_height = rt.bottom;
-	label = CreateWindow("static", LPCSTR("Нажмите \"Обновить\"!"), WS_CHILD | WS_VISIBLE,
-		border, border, window_width - 2 * border, window_height - 2*button_height,
-		hwnd, (HMENU)1001, hThisInst, NULL);
+	hwnd = CreateWindow(
+		szClassName,
+		szTitle,
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+		700,
+		400,
+		400, 185,
+		NULL, NULL, hThisInst, NULL);
+	//====================================
+	label = CreateWindow(
+		"static",
+		LPCSTR(""),
+		WS_CHILD | WS_VISIBLE,
+		5, 5,
+		373, 100,
+		hwnd,
+		(HMENU)1001,
+		hThisInst, NULL);
+	//====================================
 	SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
 
 	HANDLE hThread;
@@ -178,12 +180,19 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWin
 	hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
 	CloseHandle(hThread);
 
-	CreateWindow("button", "Обновить", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-		window_width - 2 * (border + button_width), window_height - border - button_height, button_width, button_height,
-		hwnd, (HMENU)1003, hThisInst, NULL);
+	CreateWindow(
+		"button",
+		"Обновить",
+		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+		150, 110,
+		85, 30,
+		hwnd,
+		(HMENU)1003,
+		hThisInst, NULL);
 
 	ShowWindow(hwnd, nWinMode);
 	UpdateWindow(hwnd);
+
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
 	{

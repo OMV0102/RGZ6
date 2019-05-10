@@ -4,10 +4,10 @@ using namespace std;
 #define LIB "library.dll"//имя подключаемой скомпилированной библиблиотеки
 
 LPCSTR szClassName = "Window";//имя класса
-LPCSTR szTitle = "Максимальная высота окна";//заголовок окна
+LPCSTR szTitle = "Максимальная высота окна / SSE";//заголовок окна
 
 HWND hwnd;//дескриптор окна
-HWND label;
+HWND label;//дескриптор элемента static (текстовое поле)
 
 char info[256];//строка, в которую будем запоминать полученные данные
 char msg_error[128];//строка для вывода возможной ошибки в MessageBox
@@ -15,10 +15,10 @@ char msg_error[128];//строка для вывода возможной ошибки в MessageBox
 DWORD WINAPI ThreadFunc(void*)
 {
 	//обнуляем текст в label
-	SetWindowText(label, LPCSTR(""));
+	SetWindowText(label, "");
 	//обнуляем все строки
-	strcpy_s(info, LPCSTR(""));
-	strcpy_s(msg_error, LPCSTR(""));
+	strcpy_s(info, "");
+	strcpy_s(msg_error, "");
 
 	//загружаем динамическую библиотеку
 	HINSTANCE hinstLib = LoadLibrary(TEXT(LIB));
@@ -36,16 +36,16 @@ DWORD WINAPI ThreadFunc(void*)
 		{
 			//если функция support_sse вернула значение 1, значит SSE поддерживается
 			if (support_sse() == 1)
-				sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE) supported", win_height());
+				sprintf_s(info, "\n  Maximum height of full screen window:  %d\n\n\n Streaming SIMD Extensions (SSE) supported", win_height());
 			//иначе не поддерживается
 			else
-				sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE) NOT supported", win_height());
+				sprintf_s(info, "\n  Maximum height of full screen window: %d\n\n\n  Streaming SIMD Extensions (SSE) NOT supported", win_height());
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 		}
 		//если функция support_sse вернула значение NULL
 		else if (win_height != NULL && support_sse == NULL)
 		{
-			sprintf_s(info, "\n\n Maximum height of full screen window: %d\n\n\n Streaming SIMD Extensions (SSE): UNKNOWN", win_height());
+			sprintf_s(info, "\n  Maximum height of full screen window: %d\n\n\n  Streaming SIMD Extensions (SSE): UNKNOWN", win_height());
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
@@ -56,10 +56,10 @@ DWORD WINAPI ThreadFunc(void*)
 		{
 			//если функция support_sse вернула значение 1, значит SSE поддерживается
 			if (support_sse() == 1)
-				sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE) supported");
+				sprintf_s(info, "\n  Maximum height of full screen window: UNKNOWN\n\n\n  Streaming SIMD Extensions (SSE) supported");
 			//иначе не поддерживается
 			else
-				sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE) NOT supported");
+				sprintf_s(info, "\n  Maximum height of full screen window: UNKNOWN\n\n\n  Streaming SIMD Extensions (SSE) NOT supported");
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
@@ -68,7 +68,7 @@ DWORD WINAPI ThreadFunc(void*)
 		//если обе функции вернули значение NULL
 		else
 		{
-			sprintf_s(info, "\n\n Maximum height of full screen window: UNKNOWN\n\n\n Streaming SIMD Extensions (SSE): UNKNOWN");
+			sprintf_s(info, "\n  Maximum height of full screen window: UNKNOWN\n\n\n  Streaming SIMD Extensions (SSE): UNKNOWN");
 			SetWindowText(label, LPCSTR(info));//записываем в текстовое поле static
 
 			//формируем сообщение об ошибке для MessageBox
@@ -81,14 +81,12 @@ DWORD WINAPI ThreadFunc(void*)
 		//если хоть какая-то из двух функций (или обе) вернула(и) некорректное значение, выводим MessageBox с ошибкой
 		if (win_height == NULL || support_sse == NULL)
 			MessageBox(hwnd, LPCSTR(msg_error), LPCSTR("Ошибка"), MB_OK | MB_ICONERROR);
-
-		
 	}
 	//если библиотека отсутствует
 	else
 	{
 		//формируем сообщение об ошибке для label
-		sprintf_s(info, "\n\n\n\n                 *** ERROR ***");//записываем в текстовое поле static
+		sprintf_s(info, "\n\n\n\t\t      *** ERROR ***");//записываем в текстовое поле static
 		SetWindowText(label, LPCSTR(info));
 
 		//формируем сообщение об ошибке для MessageBox
@@ -100,34 +98,38 @@ DWORD WINAPI ThreadFunc(void*)
 
 LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HANDLE hThread;
-	DWORD IDThread;
+	HANDLE hThread; // дескриптор потока
+	DWORD IDThread; // идентификатор потока
 	switch (msg)
 	{	
+		//установка цветов фона и текста у элемента static (текстовое поле)
 		case WM_CTLCOLORSTATIC:
 		{
-			DWORD CtrlID = GetDlgCtrlID((HWND)lParam);
-			if (CtrlID == 1001)
-			{
-				SetTextColor((HDC)wParam, RGB(255, 255, 255));
-				SetBkColor((HDC)wParam, RGB(0, 0, 0));
-				return (INT_PTR)GetStockObject(BLACK_BRUSH);
-			}
+			//цвет текста
+			SetTextColor((HDC)wParam, RGB(255, 255, 255));
+			//цвет фона
+			SetBkColor((HDC)wParam, RGB(0, 0, 0));
+			return (INT_PTR)GetStockObject(BLACK_BRUSH);//черная кисть
 		}
 
+		//обработка нажатия кнопки Обновить
 		case WM_COMMAND:
 		{
+			//создание потока, в котром вызывает функция ThreadFunc
 			hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
+			//закрываем поток, удаляем дескриптор
 			CloseHandle(hThread);
 			break;
 		}
 
+		//закрытие приложение
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
 			break;
 		}
 		
+		//обработка сообщения по умолчанию
 		default:
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 	}
@@ -136,62 +138,68 @@ LRESULT CALLBACK WindowFunc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hPrevInst, LPSTR str, int nWinMode)
 {
-	HFONT font_mono = (HFONT)GetStockObject(OEM_FIXED_FONT);
+	MSG msg;//сообщение
+	HANDLE hThread; // дескриптор потока
+	DWORD IDThread; // идентификатор потока
 	//====================================
+	//параметры класса окна
 	WNDCLASS wcl;
-	wcl.style = CS_HREDRAW | CS_VREDRAW;
-	wcl.lpfnWndProc = WindowFunc;
-	wcl.cbClsExtra = 0;
-	wcl.cbWndExtra = 0;
-	wcl.hInstance = hThisInst;
-	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	wcl.lpszMenuName = NULL;
-	wcl.lpszClassName = szClassName;
+	wcl.style = CS_HREDRAW | CS_VREDRAW;//стиль окна (включает перерисовку окна)
+	wcl.lpfnWndProc = WindowFunc;//указатель на процедуру
+	wcl.cbClsExtra = 0;//число дополнительных байт после структуры класса окна
+	wcl.cbWndExtra = 0;//число дополнительных байт после экземпляра окна
+	wcl.hInstance = hThisInst;//дескриптор экземпляра, который содержит оконную процедуру для класса
+	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);//логотип приложения
+	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);//устанавливаем курсор по умолчанию
+	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);//белый фон окна
+	wcl.lpszMenuName = NULL;//меню класса отсутствует
+	wcl.lpszClassName = szClassName;//имя класса
 	RegisterClass(&wcl);
 	//====================================
-
+	//создание основного окна
 	hwnd = CreateWindow(
-		szClassName,
-		szTitle,
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-		700,
-		400,
-		400, 185,
-		NULL, NULL, hThisInst, NULL);
+		szClassName,//имя класса
+		szTitle,//заголовок окна
+		//флаги, отвечающие за стиль окна:
+		//перекрывающее окно, заголовок окна, меню окна
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+		700, 400,//горизонтальное и вертикальное положение окна на экране
+		377, 185,//ширина и высота окна
+		//дескриптор родительского окна и экземпляра приложение
+		HWND_DESKTOP, NULL, hThisInst, NULL);
 	//====================================
+	//создание текстового поля
 	label = CreateWindow(
-		"static",
-		LPCSTR(""),
+		"static",//имя класса
+		"",//начальный текст
+		//флаги, отвечающие за стиль текстового поля:
+		//дочернее окно, первоначально видимо
 		WS_CHILD | WS_VISIBLE,
-		5, 5,
-		373, 100,
-		hwnd,
-		(HMENU)1001,
-		hThisInst, NULL);
+		5, 5,//горизонтальное и вертикальное положение текстового поля в окне
+		350, 100,//ширина и высота текстового поля
+		//дескриптор родительского окна и экземпляра приложение
+		hwnd, NULL, hThisInst, NULL);
 	//====================================
-	SendDlgItemMessage(hwnd, 1001, WM_SETFONT, (WPARAM)font_mono, TRUE);
-
-	HANDLE hThread;
-	DWORD IDThread;
+	//создание потока, в котором вызывается функция ThreadFunc
 	hThread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, &IDThread);
+	//закрываем поток, удаляем дескриптор
 	CloseHandle(hThread);
-
+	//====================================
+	//создание кнопки "Обновить"
 	CreateWindow(
-		"button",
-		"Обновить",
+		"button",//имя класса
+		"Обновить",//начальный текст
+		//флаги, отвечающие за стиль кнопки:
+		//дочернее окно, первоначально видимо, обработка нажатия в WM_COMMAND
 		WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-		150, 110,
-		85, 30,
-		hwnd,
-		(HMENU)1003,
-		hThisInst, NULL);
-
-	ShowWindow(hwnd, nWinMode);
-	UpdateWindow(hwnd);
-
-	MSG msg;
+		145, 110,//горизонтальное и вертикальное положение кнопки в окне
+		85, 30,//ширина и высота кнопки
+		//дескриптор родительского окна и экземпляра приложение
+		hwnd, NULL, hThisInst, NULL);
+	//====================================
+	ShowWindow(hwnd, nWinMode);//показ окна на экране
+	//====================================
+	//обработка поступающих сообщений
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
 		TranslateMessage(&msg);
